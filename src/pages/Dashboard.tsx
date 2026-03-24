@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, ArrowUpRight } from "lucide-react";
+import { TrendingUp, TrendingDown, ArrowUpRight, Brain } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { mockTransactions, mockBudgets, monthlyData, spendingByCategory, categoryIcons } from "@/data/mockData";
 import { FAB } from "@/components/FAB";
@@ -160,5 +160,3 @@ export default function Dashboard() {
   );
 }
 
-// Need to import Brain
-import { Brain } from "lucide-react";
