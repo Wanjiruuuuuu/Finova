@@ -1,9 +1,12 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Search, Trash2, Plus } from "lucide-react";
-import { mockTransactions, categoryIcons, categories, Transaction } from "@/data/mockData";
+import { mockTransactions, categoryIcons, categories } from "@/data/mockData";
 import { FAB } from "@/components/FAB";
 import { AddTransactionModal } from "@/components/AddTransactionModal";
+import { useIsDemo } from "@/contexts/DemoContext";
+import { useTransactions, useAddTransaction, useDeleteTransaction } from "@/hooks/useFinanceData";
+import { toast } from "sonner";
 
 const PER_PAGE = 10;
 
@@ -13,7 +16,13 @@ export default function Transactions() {
   const [sortBy, setSortBy] = useState("date-desc");
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
-  const [transactions] = useState<Transaction[]>(mockTransactions);
+  const isDemo = useIsDemo();
+
+  const { data: realTransactions } = useTransactions();
+  const addTransaction = useAddTransaction();
+  const deleteTransaction = useDeleteTransaction();
+
+  const transactions = isDemo ? mockTransactions : (realTransactions || []);
 
   const filtered = useMemo(() => {
     let result = [...transactions];
@@ -22,8 +31,8 @@ export default function Transactions() {
     result.sort((a, b) => {
       if (sortBy === "date-desc") return b.date.localeCompare(a.date);
       if (sortBy === "date-asc") return a.date.localeCompare(b.date);
-      if (sortBy === "amount-desc") return b.amount - a.amount;
-      return a.amount - b.amount;
+      if (sortBy === "amount-desc") return Number(b.amount) - Number(a.amount);
+      return Number(a.amount) - Number(b.amount);
     });
     return result;
   }, [transactions, search, catFilter, sortBy]);
@@ -31,9 +40,25 @@ export default function Transactions() {
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
+  const handleAdd = (tx: { description: string; amount: number; category: string; type: "income" | "expense"; date: string }) => {
+    if (isDemo) return;
+    addTransaction.mutate(tx, {
+      onSuccess: () => toast.success("Transaction added!"),
+      onError: (e) => toast.error(e.message),
+    });
+  };
+
+  const handleDelete = (id: string) => {
+    if (isDemo) return;
+    if (!confirm("Delete this transaction?")) return;
+    deleteTransaction.mutate(id, {
+      onSuccess: () => toast.success("Transaction deleted"),
+      onError: (e) => toast.error(e.message),
+    });
+  };
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Transactions</h1>
@@ -44,7 +69,6 @@ export default function Transactions() {
         </button>
       </div>
 
-      {/* Filters */}
       <div className="glass-card flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -62,7 +86,6 @@ export default function Transactions() {
         </select>
       </div>
 
-      {/* Table */}
       <div className="glass-card overflow-x-auto !p-0">
         <table className="w-full text-sm">
           <thead>
@@ -100,14 +123,17 @@ export default function Transactions() {
                 </td>
                 <td className="px-6 py-3 text-right">
                   <span className={`font-bold ${tx.type === "income" ? "text-primary" : "text-expense"}`}>
-                    {tx.type === "income" ? "+" : "-"}KES {tx.amount.toLocaleString()}
+                    {tx.type === "income" ? "+" : "-"}KES {Number(tx.amount).toLocaleString()}
                   </span>
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
                     {tx.type === "income" ? "INCOME" : "EXPENSE"}
                   </p>
                 </td>
                 <td className="px-4 py-3">
-                  <button className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-muted-foreground hover:text-expense hover:bg-expense/10 transition-all">
+                  <button
+                    onClick={() => handleDelete(tx.id)}
+                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-muted-foreground hover:text-expense hover:bg-expense/10 transition-all"
+                  >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </td>
@@ -117,24 +143,25 @@ export default function Transactions() {
         </table>
       </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>Showing {((page-1)*PER_PAGE)+1} to {Math.min(page*PER_PAGE, filtered.length)} of {filtered.length} entries</span>
-        <div className="flex gap-1">
-          {Array.from({ length: totalPages }, (_, i) => (
-            <button
-              key={i}
-              onClick={() => setPage(i + 1)}
-              className={`w-8 h-8 rounded-lg text-xs font-semibold transition-colors ${page === i + 1 ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary"}`}
-            >
-              {i + 1}
-            </button>
-          ))}
+      {filtered.length > 0 && (
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <span>Showing {((page-1)*PER_PAGE)+1} to {Math.min(page*PER_PAGE, filtered.length)} of {filtered.length} entries</span>
+          <div className="flex gap-1">
+            {Array.from({ length: totalPages }, (_, i) => (
+              <button
+                key={i}
+                onClick={() => setPage(i + 1)}
+                className={`w-8 h-8 rounded-lg text-xs font-semibold transition-colors ${page === i + 1 ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary"}`}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <FAB onClick={() => setModalOpen(true)} />
-      <AddTransactionModal open={modalOpen} onClose={() => setModalOpen(false)} onAdd={() => {}} />
+      <AddTransactionModal open={modalOpen} onClose={() => setModalOpen(false)} onAdd={handleAdd} />
     </div>
   );
 }

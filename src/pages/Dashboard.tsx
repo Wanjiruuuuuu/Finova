@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, ArrowUpRight, Brain } from "lucide-react";
+import { TrendingUp, TrendingDown, Brain, Database } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { mockTransactions, mockBudgets, monthlyData, spendingByCategory, categoryIcons } from "@/data/mockData";
 import { FAB } from "@/components/FAB";
 import { AddTransactionModal } from "@/components/AddTransactionModal";
+import { useIsDemo } from "@/contexts/DemoContext";
+import { useTransactions, useBudgets, useAddTransaction, useSeedData } from "@/hooks/useFinanceData";
+import { toast } from "sonner";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -13,19 +16,83 @@ const fadeUp = {
 
 export default function Dashboard() {
   const [modalOpen, setModalOpen] = useState(false);
+  const isDemo = useIsDemo();
+  
+  const { data: realTransactions } = useTransactions();
+  const { data: realBudgets } = useBudgets();
+  const addTransaction = useAddTransaction();
+  const seedData = useSeedData();
 
-  const totalIncome = mockTransactions.filter(t => t.type === "income").reduce((a, t) => a + t.amount, 0);
-  const totalExpenses = mockTransactions.filter(t => t.type === "expense").reduce((a, t) => a + t.amount, 0);
+  const transactions = isDemo ? mockTransactions : (realTransactions || []);
+  const budgets = isDemo ? mockBudgets : (realBudgets || []);
+
+  const totalIncome = transactions.filter(t => t.type === "income").reduce((a, t) => a + Number(t.amount), 0);
+  const totalExpenses = transactions.filter(t => t.type === "expense").reduce((a, t) => a + Number(t.amount), 0);
   const balance = totalIncome - totalExpenses;
-  const savingsRate = Math.round(((totalIncome - totalExpenses) / totalIncome) * 100);
-  const recentTx = mockTransactions.slice(0, 5);
-  const totalSpending = spendingByCategory.reduce((a, c) => a + c.value, 0);
+  const savingsRate = totalIncome > 0 ? Math.round(((totalIncome - totalExpenses) / totalIncome) * 100) : 0;
+  const recentTx = transactions.slice(0, 5);
+
+  // Build spending by category from real data
+  const spendingByCat = isDemo ? spendingByCategory : (() => {
+    const catMap: Record<string, number> = {};
+    transactions.filter(t => t.type === "expense").forEach(t => {
+      catMap[t.category] = (catMap[t.category] || 0) + Number(t.amount);
+    });
+    const colors: Record<string, string> = {
+      "Food & Dining": "#4edea3", Transport: "#60a5fa", Housing: "#f59e0b",
+      Entertainment: "#a78bfa", Health: "#f87171", Shopping: "#fb923c",
+      Education: "#34d399", Utilities: "#fbbf24", Investment: "#2dd4bf", Other: "#94a3b8",
+    };
+    return Object.entries(catMap).map(([name, value]) => ({ name, value, color: colors[name] || "#94a3b8" }));
+  })();
+  const totalSpending = spendingByCat.reduce((a, c) => a + c.value, 0);
+
+  // Budget data for progress bars
+  const budgetItems = isDemo ? mockBudgets : budgets.map(b => {
+    const spent = transactions.filter(t => t.type === "expense" && t.category === b.category).reduce((a, t) => a + Number(t.amount), 0);
+    return { ...b, spent, limit: Number(b.limit) };
+  });
 
   const stats = [
     { label: "Total Balance", value: `KES ${balance.toLocaleString()}`, trend: "+8.2%", up: true, color: "text-foreground" },
     { label: "Monthly Income", value: `KES ${totalIncome.toLocaleString()}`, trend: "+12%", up: true, color: "text-primary" },
     { label: "Monthly Expenses", value: `KES ${totalExpenses.toLocaleString()}`, trend: "-12%", up: false, color: "text-expense" },
   ];
+
+  const handleAddTransaction = (tx: { description: string; amount: number; category: string; type: "income" | "expense"; date: string }) => {
+    if (isDemo) return;
+    addTransaction.mutate(tx, {
+      onSuccess: () => toast.success("Transaction added!"),
+      onError: (e) => toast.error(e.message),
+    });
+  };
+
+  const handleSeedData = () => {
+    seedData.mutate(undefined, {
+      onSuccess: () => toast.success("Demo data loaded!"),
+      onError: (e) => toast.error(e.message),
+    });
+  };
+
+  // Empty state for real users with no data
+  if (!isDemo && transactions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+        <Database className="w-16 h-16 text-primary/30 mb-4" />
+        <h2 className="text-xl font-bold text-foreground mb-2">No transactions yet</h2>
+        <p className="text-sm text-muted-foreground mb-6 max-w-sm">
+          Start tracking your finances by adding your first transaction, or load demo data to explore Finova.
+        </p>
+        <div className="flex gap-3">
+          <button onClick={() => setModalOpen(true)} className="btn-primary">Add Transaction</button>
+          <button onClick={handleSeedData} className="btn-ghost" disabled={seedData.isPending}>
+            {seedData.isPending ? "Loading..." : "Load Demo Data"}
+          </button>
+        </div>
+        <AddTransactionModal open={modalOpen} onClose={() => setModalOpen(false)} onAdd={handleAddTransaction} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -41,7 +108,6 @@ export default function Dashboard() {
             </div>
           </motion.div>
         ))}
-        {/* Savings Rate */}
         <motion.div className="glass-card border-l-4 border-l-primary" custom={3} initial="hidden" animate="visible" variants={fadeUp}>
           <p className="text-xs text-muted-foreground mb-1">Savings Rate</p>
           <p className="stat-value text-primary">{savingsRate}%</p>
@@ -53,7 +119,6 @@ export default function Dashboard() {
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        {/* Net Worth Chart */}
         <motion.div className="glass-card xl:col-span-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
           <h3 className="text-sm font-semibold text-foreground mb-4">Net Worth Overview</h3>
           <ResponsiveContainer width="100%" height={240}>
@@ -75,23 +140,22 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </motion.div>
 
-        {/* Spending Doughnut */}
         <motion.div className="glass-card" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
           <h3 className="text-sm font-semibold text-foreground mb-4">Spending by Category</h3>
           <ResponsiveContainer width="100%" height={180}>
             <PieChart>
-              <Pie data={spendingByCategory} innerRadius={50} outerRadius={75} dataKey="value" strokeWidth={0}>
-                {spendingByCategory.map((entry) => (
+              <Pie data={spendingByCat} innerRadius={50} outerRadius={75} dataKey="value" strokeWidth={0}>
+                {spendingByCat.map((entry) => (
                   <Cell key={entry.name} fill={entry.color} />
                 ))}
               </Pie>
               <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="fill-foreground text-lg font-bold">
-                KES {(totalSpending / 1000).toFixed(0)}k
+                KES {totalSpending > 0 ? (totalSpending / 1000).toFixed(0) + "k" : "0"}
               </text>
             </PieChart>
           </ResponsiveContainer>
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2">
-            {spendingByCategory.slice(0, 6).map(c => (
+            {spendingByCat.slice(0, 6).map(c => (
               <div key={c.name} className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span className="w-2 h-2 rounded-full" style={{ background: c.color }} />
                 {c.name}
@@ -116,7 +180,7 @@ export default function Dashboard() {
                   <p className="text-xs text-muted-foreground">{tx.category} · {tx.date}</p>
                 </div>
                 <p className={`text-sm font-bold ${tx.type === "income" ? "text-primary" : "text-expense"}`}>
-                  {tx.type === "income" ? "+" : "-"}KES {tx.amount.toLocaleString()}
+                  {tx.type === "income" ? "+" : "-"}KES {Number(tx.amount).toLocaleString()}
                 </p>
               </div>
             ))}
@@ -125,8 +189,8 @@ export default function Dashboard() {
 
         <motion.div className="glass-card space-y-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}>
           <h3 className="text-sm font-semibold text-foreground">Budget Progress</h3>
-          {mockBudgets.slice(0, 3).map(b => {
-            const pct = Math.round((b.spent / b.limit) * 100);
+          {budgetItems.slice(0, 3).map(b => {
+            const pct = Math.round((b.spent / Number(b.limit)) * 100);
             const barClass = pct >= 100 ? "progress-bar-fill-danger" : pct >= 75 ? "progress-bar-fill-warning" : "progress-bar-fill-primary";
             return (
               <div key={b.id}>
@@ -141,7 +205,6 @@ export default function Dashboard() {
             );
           })}
 
-          {/* AI mini card */}
           <div className="border border-primary/20 rounded-lg p-3 mt-2">
             <div className="flex items-center gap-2 mb-2">
               <Brain className="w-4 h-4 text-primary" />
@@ -155,8 +218,7 @@ export default function Dashboard() {
       </div>
 
       <FAB onClick={() => setModalOpen(true)} />
-      <AddTransactionModal open={modalOpen} onClose={() => setModalOpen(false)} onAdd={() => {}} />
+      <AddTransactionModal open={modalOpen} onClose={() => setModalOpen(false)} onAdd={handleAddTransaction} />
     </div>
   );
 }
-

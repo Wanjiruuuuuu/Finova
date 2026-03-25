@@ -2,24 +2,48 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { AlertTriangle, Plus } from "lucide-react";
 import { mockBudgets, categoryIcons, categories } from "@/data/mockData";
+import { useIsDemo } from "@/contexts/DemoContext";
+import { useBudgets, useAddBudget, useTransactions } from "@/hooks/useFinanceData";
+import { toast } from "sonner";
 
 export default function Budgets() {
-  const [budgets] = useState(mockBudgets);
+  const isDemo = useIsDemo();
+  const { data: realBudgets } = useBudgets();
+  const { data: realTransactions } = useTransactions();
+  const addBudget = useAddBudget();
   const [showAddGoal, setShowAddGoal] = useState(false);
   const [newCategory, setNewCategory] = useState(categories[0]);
   const [newLimit, setNewLimit] = useState("");
 
-  const totalSpent = budgets.reduce((a, b) => a + b.spent, 0);
-  const totalLimit = budgets.reduce((a, b) => a + b.limit, 0);
+  const transactions = isDemo ? [] : (realTransactions || []);
+
+  const budgets = isDemo ? mockBudgets : (realBudgets || []).map(b => {
+    const spent = transactions.filter(t => t.type === "expense" && t.category === b.category).reduce((a, t) => a + Number(t.amount), 0);
+    return { ...b, spent, limit: Number(b.limit) };
+  });
+
+  const totalSpent = budgets.reduce((a, b) => a + (b.spent || 0), 0);
+  const totalLimit = budgets.reduce((a, b) => a + Number(b.limit), 0);
   const remaining = totalLimit - totalSpent;
   const daysRemaining = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() - new Date().getDate();
 
-  const alerts = budgets.filter(b => (b.spent / b.limit) >= 0.8);
+  const alerts = budgets.filter(b => b.spent && (b.spent / Number(b.limit)) >= 0.8);
+
+  const handleAddGoal = () => {
+    if (!newLimit || isDemo) return;
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    addBudget.mutate(
+      { category: newCategory, limit: parseFloat(newLimit), month: currentMonth },
+      {
+        onSuccess: () => { toast.success("Budget goal added!"); setNewLimit(""); setShowAddGoal(false); },
+        onError: (e) => toast.error(e.message),
+      }
+    );
+  };
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        {/* Header Card */}
         <motion.div className="glass-card xl:col-span-2" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <p className="section-eyebrow">Monthly Budget Performance</p>
           <div className="flex items-baseline gap-2 mt-2">
@@ -53,12 +77,11 @@ export default function Budgets() {
                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
               <input className="input-dark w-32" placeholder="Limit (KES)" type="number" value={newLimit} onChange={e => setNewLimit(e.target.value)} />
-              <button className="btn-primary">Save</button>
+              <button className="btn-primary" onClick={handleAddGoal}>Save</button>
             </motion.div>
           )}
         </motion.div>
 
-        {/* Alerts */}
         <motion.div className="glass-card border border-expense/20" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
           <div className="flex items-center gap-2 mb-4">
             <AlertTriangle className="w-5 h-5 text-expense" />
@@ -69,7 +92,7 @@ export default function Budgets() {
           ) : (
             <div className="space-y-3">
               {alerts.map(b => {
-                const pct = Math.round((b.spent / b.limit) * 100);
+                const pct = Math.round(((b.spent || 0) / Number(b.limit)) * 100);
                 return (
                   <div key={b.id} className="rounded-lg bg-expense/5 p-3 border border-expense/10">
                     <div className="flex justify-between text-sm">
@@ -77,7 +100,7 @@ export default function Budgets() {
                       <span className="text-expense font-bold">{pct}%</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      KES {b.spent.toLocaleString()} of KES {b.limit.toLocaleString()}
+                      KES {(b.spent || 0).toLocaleString()} of KES {Number(b.limit).toLocaleString()}
                     </p>
                   </div>
                 );
@@ -87,10 +110,9 @@ export default function Budgets() {
         </motion.div>
       </div>
 
-      {/* Category Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {budgets.map((b, i) => {
-          const pct = Math.round((b.spent / b.limit) * 100);
+          const pct = Math.round(((b.spent || 0) / Number(b.limit)) * 100);
           const status = pct >= 100 ? "critical" : pct >= 75 ? "caution" : "safe";
           const statusColor = status === "critical" ? "text-expense" : status === "caution" ? "text-warning" : "text-primary";
           const barClass = status === "critical" ? "progress-bar-fill-danger" : status === "caution" ? "progress-bar-fill-warning" : "progress-bar-fill-primary";
@@ -119,8 +141,8 @@ export default function Budgets() {
                 <div className={barClass} style={{ width: `${Math.min(pct, 100)}%` }} />
               </div>
               <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                <span>KES {b.spent.toLocaleString()} spent</span>
-                <span>KES {b.limit.toLocaleString()} limit</span>
+                <span>KES {(b.spent || 0).toLocaleString()} spent</span>
+                <span>KES {Number(b.limit).toLocaleString()} limit</span>
               </div>
             </motion.div>
           );

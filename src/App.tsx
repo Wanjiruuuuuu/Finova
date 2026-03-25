@@ -4,7 +4,9 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/AppLayout";
+import { RequireAuth } from "@/hooks/useAuth";
 import Landing from "./pages/Landing";
+import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
 import AIInsights from "./pages/AIInsights";
@@ -23,8 +25,9 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Landing />} />
-          {/* Real authenticated routes */}
-          <Route element={<AppLayout />}>
+          <Route path="/auth" element={<Auth />} />
+          {/* Protected routes */}
+          <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/ai-insights" element={<AIInsights />} />
@@ -32,7 +35,7 @@ const App = () => (
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
-          {/* Demo mode routes — same pages, no auth required */}
+          {/* Demo mode routes — no auth */}
           <Route element={<AppLayout />}>
             <Route path="/demo/dashboard" element={<Dashboard />} />
             <Route path="/demo/transactions" element={<Transactions />} />
