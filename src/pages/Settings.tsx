@@ -66,27 +66,8 @@ export default function SettingsPage() {
         </div>
       </motion.div>
 
-      {/* Appearance */}
-      <motion.div className="glass-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-        <h2 className="text-sm font-bold text-foreground mb-4">Appearance</h2>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-foreground">Dark Interface</span>
-            <div className="w-10 h-6 rounded-full bg-primary flex items-center px-0.5">
-              <div className="w-5 h-5 rounded-full bg-primary-foreground ml-auto" />
-            </div>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-foreground">Glassmorphism</span>
-            <div className="w-10 h-6 rounded-full bg-primary flex items-center px-0.5">
-              <div className="w-5 h-5 rounded-full bg-primary-foreground ml-auto" />
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
       {/* Security */}
-      <motion.div className="glass-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+      <motion.div className="glass-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
         <h2 className="text-sm font-bold text-foreground mb-4">Security</h2>
         <div className="space-y-2">
           <button className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-secondary/50 transition-colors text-left">
@@ -109,7 +90,7 @@ export default function SettingsPage() {
       </motion.div>
 
       {/* Danger Zone */}
-      <motion.div className="glass-card border border-expense/20" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+      <motion.div className="glass-card border border-expense/20" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
         <h2 className="text-sm font-bold text-expense mb-2">Danger Zone</h2>
         <p className="text-xs text-muted-foreground mb-4">This action cannot be undone. Please be certain.</p>
         <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-expense/10 text-expense text-sm font-semibold hover:bg-expense/20 transition-colors">

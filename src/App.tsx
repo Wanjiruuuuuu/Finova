@@ -23,6 +23,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Landing />} />
+          {/* Real authenticated routes */}
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/transactions" element={<Transactions />} />
@@ -30,6 +31,15 @@ const App = () => (
             <Route path="/budgets" element={<Budgets />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<SettingsPage />} />
+          </Route>
+          {/* Demo mode routes — same pages, no auth required */}
+          <Route element={<AppLayout />}>
+            <Route path="/demo/dashboard" element={<Dashboard />} />
+            <Route path="/demo/transactions" element={<Transactions />} />
+            <Route path="/demo/ai-insights" element={<AIInsights />} />
+            <Route path="/demo/budgets" element={<Budgets />} />
+            <Route path="/demo/reports" element={<Reports />} />
+            <Route path="/demo/settings" element={<SettingsPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowRight, BarChart3, Brain, Shield, Zap, TrendingUp, ChevronRight } from "lucide-react";
+import { ArrowRight, BarChart3, Brain, Shield, Zap, TrendingUp, ChevronRight, Check, Play, Github, Linkedin, Mail, Phone } from "lucide-react";
 
 const typingPhrases = ["your spending habits.", "your savings potential.", "your financial future.", "where every shilling goes."];
 
@@ -39,6 +39,36 @@ function HeroDashboardMock() {
     </div>
   );
 }
+
+const pricingPlans = [
+  {
+    name: "Free",
+    price: "KES 0",
+    period: "forever",
+    desc: "Perfect for getting started",
+    features: ["50 transactions/month", "Basic dashboard", "Manual CSV export", "1 budget category"],
+    cta: "Get Started Free",
+    highlighted: false,
+  },
+  {
+    name: "Pro",
+    price: "KES 499",
+    period: "/month",
+    desc: "For serious money managers",
+    features: ["Unlimited transactions", "AI-powered insights", "PDF & CSV exports", "Unlimited budgets", "Priority support"],
+    cta: "Start Pro Trial",
+    highlighted: true,
+  },
+  {
+    name: "Annual",
+    price: "KES 3,999",
+    period: "/year",
+    desc: "Best value — save 33%",
+    features: ["Everything in Pro", "Advanced analytics", "Custom reports", "API access", "Early feature access"],
+    cta: "Go Annual",
+    highlighted: false,
+  },
+];
 
 export default function Landing() {
   const [phraseIndex, setPhraseIndex] = useState(0);
@@ -94,8 +124,8 @@ export default function Landing() {
       </nav>
 
       {/* Hero */}
-      <section className="pt-32 pb-20 px-6">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <section className="pt-36 pb-28 px-6">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7 }}>
             <div className="inline-flex items-center gap-2 pill-badge bg-primary/10 text-primary mb-6">
               <span className="w-2 h-2 rounded-full bg-primary animate-pulse-glow" />
@@ -110,14 +140,16 @@ export default function Landing() {
                 Understand {displayed}<span className="animate-pulse text-primary">|</span>
               </p>
             </div>
-            <p className="text-sm text-muted-foreground mt-4 max-w-md leading-relaxed">
+            <p className="text-sm text-muted-foreground mt-6 max-w-md leading-relaxed">
               Finova combines intelligent tracking with AI analysis to give you complete visibility into your finances. Built for Kenyans who take their money seriously.
             </p>
-            <div className="flex gap-3 mt-8">
+            <div className="flex gap-3 mt-10">
               <Link to="/dashboard" className="btn-primary flex items-center gap-2">
                 Get Started <ArrowRight className="w-4 h-4" />
               </Link>
-              <Link to="/dashboard" className="btn-ghost">Sign In</Link>
+              <Link to="/demo/dashboard" className="btn-ghost flex items-center gap-2">
+                <Play className="w-4 h-4" /> See How It Works
+              </Link>
             </div>
           </motion.div>
 
@@ -133,10 +165,10 @@ export default function Landing() {
       </section>
 
       {/* Ticker */}
-      <div className="border-y border-border/50 py-3 overflow-hidden">
+      <div className="border-y border-border/50 py-4 overflow-hidden">
         <div className="animate-ticker flex whitespace-nowrap">
           {[...Array(2)].map((_, rep) => (
-            <div key={rep} className="flex items-center gap-12 px-6 text-sm text-muted-foreground">
+            <div key={rep} className="flex items-center gap-20 px-10 text-sm text-muted-foreground">
               <span>📊 <strong className="text-foreground">10K+</strong> transactions tracked</span>
               <span>🤖 <strong className="text-foreground">AI-Powered</strong> by Gemini</span>
               <span>🇰🇪 <strong className="text-foreground">Made in Nairobi</strong></span>
@@ -149,13 +181,13 @@ export default function Landing() {
       </div>
 
       {/* Features */}
-      <section id="features" className="py-20 px-6">
+      <section id="features" className="py-28 px-6">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-20">
             <p className="section-eyebrow">Features</p>
             <h2 className="text-3xl font-bold text-foreground mt-2">Everything you need to master your money</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {features.map((f, i) => (
               <motion.div
                 key={f.title}
@@ -179,11 +211,11 @@ export default function Landing() {
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" className="py-20 px-6 border-t border-border/50">
+      <section id="how-it-works" className="py-28 px-6 border-t border-border/50">
         <div className="max-w-4xl mx-auto text-center">
           <p className="section-eyebrow">How It Works</p>
-          <h2 className="text-3xl font-bold text-foreground mt-2 mb-12">Three steps to financial clarity</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <h2 className="text-3xl font-bold text-foreground mt-2 mb-16">Three steps to financial clarity</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             {[
               { step: "01", title: "Track", desc: "Log your income and expenses with our intuitive interface" },
               { step: "02", title: "Analyze", desc: "AI processes your patterns and delivers actionable insights" },
@@ -197,9 +229,9 @@ export default function Landing() {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.15 }}
               >
-                <div className="text-4xl font-black text-primary/20 mb-2">{s.step}</div>
+                <div className="text-4xl font-black text-primary/20 mb-3">{s.step}</div>
                 <h3 className="text-lg font-bold text-foreground">{s.title}</h3>
-                <p className="text-sm text-muted-foreground mt-1">{s.desc}</p>
+                <p className="text-sm text-muted-foreground mt-2">{s.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -207,36 +239,112 @@ export default function Landing() {
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="py-20 px-6 border-t border-border/50">
-        <div className="max-w-lg mx-auto">
-          <motion.div
-            className="glass-card text-center"
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-          >
+      <section id="pricing" className="py-28 px-6 border-t border-border/50">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
             <p className="section-eyebrow">Pricing</p>
-            <h2 className="text-3xl font-bold text-foreground mt-2">Finova is <span className="text-primary">free</span>.</h2>
-            <p className="text-sm text-muted-foreground mt-3">All features, unlimited transactions, AI insights included.</p>
-            <Link to="/dashboard" className="btn-primary inline-flex items-center gap-2 mt-6">
-              Start Now <ChevronRight className="w-4 h-4" />
-            </Link>
-            <p className="text-xs text-muted-foreground mt-6">Built by Rachel Maina · Nairobi, Kenya</p>
-          </motion.div>
+            <h2 className="text-3xl font-bold text-foreground mt-2">Simple, transparent pricing</h2>
+            <p className="text-sm text-muted-foreground mt-3 max-w-md mx-auto">Start free and upgrade when you need advanced analytics and AI insights.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {pricingPlans.map((plan, i) => (
+              <motion.div
+                key={plan.name}
+                className={`glass-card relative flex flex-col ${plan.highlighted ? "border-primary/40 ring-1 ring-primary/20" : ""}`}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+              >
+                {plan.highlighted && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="pill-badge bg-primary text-primary-foreground text-[10px] font-bold">Recommended</span>
+                  </div>
+                )}
+                <div className="mb-6">
+                  <h3 className="text-lg font-bold text-foreground">{plan.name}</h3>
+                  <p className="text-sm text-muted-foreground mt-1">{plan.desc}</p>
+                </div>
+                <div className="mb-6">
+                  <span className="text-3xl font-bold text-foreground">{plan.price}</span>
+                  <span className="text-sm text-muted-foreground ml-1">{plan.period}</span>
+                </div>
+                <ul className="space-y-3 mb-8 flex-1">
+                  {plan.features.map(f => (
+                    <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  to="/dashboard"
+                  className={plan.highlighted ? "btn-primary text-center" : "btn-ghost text-center"}
+                >
+                  {plan.cta}
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Strip */}
+      <section className="py-20 px-6 border-t border-border/50">
+        <div className="max-w-2xl mx-auto text-center">
+          <h2 className="text-3xl font-bold text-foreground">Ready to take control?</h2>
+          <p className="text-sm text-muted-foreground mt-3">Join thousands of Kenyans already managing their finances with Finova.</p>
+          <Link to="/dashboard" className="btn-primary inline-flex items-center gap-2 mt-8">
+            Get Started Now <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 py-8 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            <span className="text-sm font-bold text-primary">Finova</span>
-            <span className="text-xs text-muted-foreground ml-2">© 2025 The Digital Ledger</span>
+      <footer className="border-t border-border/50 py-12 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
+            <div>
+              <h3 className="text-lg font-bold text-primary">Finova</h3>
+              <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-muted-foreground">The Digital Ledger</p>
+              <p className="text-sm text-muted-foreground mt-3 leading-relaxed">AI-powered personal finance tracker built for Kenyans.</p>
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">Product</h4>
+              <div className="space-y-2">
+                <a href="#features" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
+                <a href="#pricing" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
+                <Link to="/demo/dashboard" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Demo</Link>
+              </div>
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">Connect</h4>
+              <div className="space-y-2">
+                <a href="https://www.linkedin.com/in/rachelmaina" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Linkedin className="w-4 h-4" /> LinkedIn
+                </a>
+                <a href="https://github.com/Wanjiruuuuuu" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Github className="w-4 h-4" /> GitHub
+                </a>
+                <a href="mailto:rachelwajiru07@gmail.com" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Mail className="w-4 h-4" /> Email
+                </a>
+                <a href="tel:+254728437261" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Phone className="w-4 h-4" /> +254 728 437 261
+                </a>
+              </div>
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-foreground uppercase tracking-wider mb-3">Legal</h4>
+              <div className="space-y-2">
+                <a href="#" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</a>
+                <a href="#" className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Terms of Service</a>
+              </div>
+            </div>
           </div>
-          <div className="flex gap-6 text-sm text-muted-foreground">
-            <a href="#" className="hover:text-foreground transition-colors">GitHub</a>
-            <a href="#" className="hover:text-foreground transition-colors">LinkedIn</a>
-            <a href="#" className="hover:text-foreground transition-colors">Contact</a>
+          <div className="border-t border-border/50 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">© 2025 Finova — The Digital Ledger. All rights reserved.</p>
+            <p className="text-xs text-muted-foreground">Built by Rachel Maina · Nairobi, Kenya 🇰🇪</p>
           </div>
         </div>
       </footer>
