@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { Bell } from "lucide-react";
+import { Bell, LogOut } from "lucide-react";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { useIsDemo } from "@/contexts/DemoContext";
+import { useAuth } from "@/hooks/useAuth";
 import { AlertTriangle, CheckCircle, Info } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const iconMap = {
   warning: AlertTriangle,
@@ -30,6 +32,8 @@ export function Topbar() {
   const ref = useRef<HTMLDivElement>(null);
   const { notifications, unreadCount, markAllRead } = useNotifications();
   const isDemo = useIsDemo();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -39,11 +43,19 @@ export function Topbar() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  const displayName = isDemo ? "Rachel" : (user?.user_metadata?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "User");
+  const initial = displayName.charAt(0).toUpperCase();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
+
   return (
     <header className="sticky top-0 z-30 h-16 border-b border-border flex items-center justify-between px-6" style={{ background: '#0b1326' }}>
       <div>
         <h2 className="text-sm font-semibold text-foreground">
-          Welcome back, Rachel
+          Welcome back, {displayName}
           {isDemo && <span className="ml-2 pill-badge bg-warning/10 text-warning text-[10px]">Demo Mode</span>}
         </h2>
         <p className="text-xs text-muted-foreground">Your financial overview is updated as of 2m ago.</p>
@@ -90,8 +102,16 @@ export function Topbar() {
             </div>
           )}
         </div>
+
+        {/* Sign out (only for real users) */}
+        {!isDemo && user && (
+          <button onClick={handleSignOut} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors" title="Sign out">
+            <LogOut className="w-5 h-5" />
+          </button>
+        )}
+
         <div className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary text-sm font-bold">
-          R
+          {initial}
         </div>
       </div>
     </header>

@@ -1,22 +1,32 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { RefreshCw, Eye, Lightbulb, Sparkles, TrendingUp } from "lucide-react";
+import { RefreshCw, Eye, Lightbulb, Sparkles } from "lucide-react";
 import { mockInsights } from "@/data/mockData";
+import { useIsDemo } from "@/contexts/DemoContext";
+import { useInsights } from "@/hooks/useFinanceData";
 
 export default function AIInsights() {
-  const [loading, setLoading] = useState(false);
-  const [insights] = useState(mockInsights);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const isDemo = useIsDemo();
+
+  const { data: realInsights, isLoading: realLoading, refetch } = useInsights();
+  
+  const loading = !isDemo && realLoading;
+  const insights = isDemo ? mockInsights : (realInsights || mockInsights);
 
   const handleRefresh = () => {
-    setLoading(true);
-    setTimeout(() => setLoading(false), 2000);
+    if (isDemo) {
+      // Fake loading for demo
+      setRefreshKey(k => k + 1);
+      return;
+    }
+    refetch();
   };
 
   const scoreOffset = 553 - (553 * insights.spendingScore / 100);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <p className="section-eyebrow">Intelligence Suite</p>
@@ -40,7 +50,6 @@ export default function AIInsights() {
       ) : (
         <>
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-            {/* Score Card */}
             <motion.div className="glass-card xl:col-span-2 flex flex-col sm:flex-row items-center gap-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className="relative">
                 <svg width="160" height="160" viewBox="0 0 200 200">
@@ -71,7 +80,6 @@ export default function AIInsights() {
               </div>
             </motion.div>
 
-            {/* Persona Card */}
             <motion.div className="glass-card border-l-4 border-l-primary" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
               <p className="section-eyebrow">Persona Archetype</p>
               <h3 className="text-xl font-bold text-foreground mt-1">{insights.personaArchetype}</h3>
@@ -83,14 +91,13 @@ export default function AIInsights() {
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            {/* Observations */}
             <motion.div className="glass-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
               <div className="flex items-center gap-2 mb-4">
                 <Eye className="w-5 h-5 text-primary" />
                 <h3 className="text-sm font-bold text-foreground">Key Observations</h3>
               </div>
               <div className="space-y-3">
-                {insights.observations.map((obs, i) => (
+                {insights.observations.map((obs: string, i: number) => (
                   <div key={i} className="flex gap-3">
                     <span className="text-xs font-bold text-primary mt-0.5">{String(i + 1).padStart(2, '0')}</span>
                     <p className="text-sm text-muted-foreground leading-relaxed">{obs}</p>
@@ -99,14 +106,13 @@ export default function AIInsights() {
               </div>
             </motion.div>
 
-            {/* Tips */}
             <motion.div className="glass-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
               <div className="flex items-center gap-2 mb-4">
                 <Lightbulb className="w-5 h-5 text-primary" />
                 <h3 className="text-sm font-bold text-foreground">Saving Tips</h3>
               </div>
               <div className="grid gap-3">
-                {insights.tips.map((tip, i) => (
+                {insights.tips.map((tip: string, i: number) => (
                   <div key={i} className="rounded-lg bg-secondary/50 p-3">
                     <p className="text-sm text-foreground font-medium">{tip}</p>
                   </div>
@@ -116,7 +122,6 @@ export default function AIInsights() {
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            {/* Predicted Balance */}
             <motion.div className="glass-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
               <p className="section-eyebrow">Predicted End-of-Month</p>
               <p className="text-3xl font-bold text-primary mt-2">KES {insights.predictedBalance.toLocaleString()}</p>
@@ -127,7 +132,6 @@ export default function AIInsights() {
               </div>
             </motion.div>
 
-            {/* Reflective Prompt */}
             <motion.div
               className="rounded-xl p-6 border border-primary/20"
               style={{ background: 'linear-gradient(135deg, #131b2e, #2d3449)' }}

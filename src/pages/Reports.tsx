@@ -1,15 +1,35 @@
 import { motion } from "framer-motion";
 import { Download, FileText } from "lucide-react";
 import { mockTransactions, monthlyData, spendingByCategory, categoryIcons } from "@/data/mockData";
+import { useIsDemo } from "@/contexts/DemoContext";
+import { useTransactions } from "@/hooks/useFinanceData";
 
 export default function Reports() {
+  const isDemo = useIsDemo();
+  const { data: realTransactions } = useTransactions();
+  const transactions = isDemo ? mockTransactions : (realTransactions || []);
+
   const bestMonth = monthlyData.reduce((a, b) => b.savings > a.savings ? b : a);
   const worstMonth = monthlyData.reduce((a, b) => b.savings < a.savings ? b : a);
   const avgSpending = Math.round(monthlyData.reduce((a, b) => a + b.expenses, 0) / monthlyData.length);
 
+  // Build spending by category from actual data
+  const spendingByCat = isDemo ? spendingByCategory : (() => {
+    const catMap: Record<string, number> = {};
+    transactions.filter(t => t.type === "expense").forEach(t => {
+      catMap[t.category] = (catMap[t.category] || 0) + Number(t.amount);
+    });
+    const colors: Record<string, string> = {
+      "Food & Dining": "#4edea3", Transport: "#60a5fa", Housing: "#f59e0b",
+      Entertainment: "#a78bfa", Health: "#f87171", Shopping: "#fb923c",
+      Education: "#34d399", Utilities: "#fbbf24", Investment: "#2dd4bf", Other: "#94a3b8",
+    };
+    return Object.entries(catMap).map(([name, value]) => ({ name, value, color: colors[name] || "#94a3b8" })).sort((a, b) => b.value - a.value);
+  })();
+
   const handleExportCSV = () => {
     const headers = "Date,Description,Category,Type,Amount\n";
-    const rows = mockTransactions.map(t => `${t.date},${t.description},${t.category},${t.type},${t.amount}`).join("\n");
+    const rows = transactions.map(t => `${t.date},${t.description},${t.category},${t.type},${t.amount}`).join("\n");
     const blob = new Blob([headers + rows], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -51,7 +71,6 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <p className="section-eyebrow">Analytical Engine</p>
@@ -67,7 +86,6 @@ export default function Reports() {
         </div>
       </div>
 
-      {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <motion.div className="glass-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <p className="text-xs text-muted-foreground">Best Month</p>
@@ -86,7 +104,6 @@ export default function Reports() {
         </motion.div>
       </div>
 
-      {/* Monthly Ledger */}
       <div className="glass-card !p-0 overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -121,12 +138,12 @@ export default function Reports() {
         </table>
       </div>
 
-      {/* Top Categories */}
       <div>
         <h3 className="text-sm font-semibold text-foreground mb-4">Top Spending Categories</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          {spendingByCategory.slice(0, 4).map((cat, i) => {
-            const pct = Math.round((cat.value / spendingByCategory.reduce((a, c) => a + c.value, 0)) * 100);
+          {spendingByCat.slice(0, 4).map((cat, i) => {
+            const total = spendingByCat.reduce((a, c) => a + c.value, 0);
+            const pct = total > 0 ? Math.round((cat.value / total) * 100) : 0;
             return (
               <motion.div
                 key={cat.name}
