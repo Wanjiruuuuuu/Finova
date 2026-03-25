@@ -117,8 +117,8 @@ export default function Landing() {
             <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
           </div>
           <div className="flex items-center gap-3">
-            <Link to="/dashboard" className="btn-ghost text-sm hidden sm:block">Log In</Link>
-            <Link to="/dashboard" className="btn-primary text-sm">Get Started</Link>
+            <Link to="/auth" className="btn-ghost text-sm hidden sm:block">Log In</Link>
+            <Link to="/auth" className="btn-primary text-sm">Get Started</Link>
           </div>
         </div>
       </nav>
@@ -144,7 +144,7 @@ export default function Landing() {
               Finova combines intelligent tracking with AI analysis to give you complete visibility into your finances. Built for Kenyans who take their money seriously.
             </p>
             <div className="flex gap-3 mt-10">
-              <Link to="/dashboard" className="btn-primary flex items-center gap-2">
+              <Link to="/auth" className="btn-primary flex items-center gap-2">
                 Get Started <ArrowRight className="w-4 h-4" />
               </Link>
               <Link to="/demo/dashboard" className="btn-ghost flex items-center gap-2">
@@ -278,7 +278,7 @@ export default function Landing() {
                   ))}
                 </ul>
                 <Link
-                  to="/dashboard"
+                  to="/auth"
                   className={plan.highlighted ? "btn-primary text-center" : "btn-ghost text-center"}
                 >
                   {plan.cta}
@@ -294,7 +294,7 @@ export default function Landing() {
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-foreground">Ready to take control?</h2>
           <p className="text-sm text-muted-foreground mt-3">Join thousands of Kenyans already managing their finances with Finova.</p>
-          <Link to="/dashboard" className="btn-primary inline-flex items-center gap-2 mt-8">
+          <Link to="/auth" className="btn-primary inline-flex items-center gap-2 mt-8">
             Get Started Now <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
