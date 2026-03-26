@@ -47,7 +47,7 @@ export default function Dashboard() {
   const budgets = isDemo ? mockBudgets : (realBudgets || []);
 
   // Last updated timestamp
-  const lastTxDate = transactions.length > 0 ? new Date(transactions[0].created_at || transactions[0].date) : null;
+  const lastTxDate = transactions.length > 0 ? new Date((transactions[0] as any).created_at || transactions[0].date) : null;
   const timeAgoText = useTimeAgo(lastTxDate);
 
   const totalIncome = transactions.filter(t => t.type === "income").reduce((a, t) => a + Number(t.amount), 0);
