@@ -13,6 +13,8 @@ import AIInsights from "./pages/AIInsights";
 import Budgets from "./pages/Budgets";
 import Reports from "./pages/Reports";
 import SettingsPage from "./pages/Settings";
+import Advisors from "./pages/Advisors";
+import AdvisorDetail from "./pages/AdvisorDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +36,8 @@ const App = () => (
             <Route path="/budgets" element={<Budgets />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/advisors" element={<Advisors />} />
+            <Route path="/advisors/:id" element={<AdvisorDetail />} />
           </Route>
           {/* Demo mode routes — no auth */}
           <Route element={<AppLayout />}>
@@ -43,6 +47,8 @@ const App = () => (
             <Route path="/demo/budgets" element={<Budgets />} />
             <Route path="/demo/reports" element={<Reports />} />
             <Route path="/demo/settings" element={<SettingsPage />} />
+            <Route path="/demo/advisors" element={<Advisors />} />
+            <Route path="/demo/advisors/:id" element={<AdvisorDetail />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

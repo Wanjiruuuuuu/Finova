@@ -76,32 +76,56 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           bio: string | null
           created_at: string
           currency: string
           date_format: string
+          financial_goals: Json | null
           full_name: string | null
           id: string
+          income_range: string | null
+          income_source: string | null
+          last_name: string | null
+          notification_preferences: Json | null
+          phone: string | null
+          plan: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          avatar_url?: string | null
           bio?: string | null
           created_at?: string
           currency?: string
           date_format?: string
+          financial_goals?: Json | null
           full_name?: string | null
           id?: string
+          income_range?: string | null
+          income_source?: string | null
+          last_name?: string | null
+          notification_preferences?: Json | null
+          phone?: string | null
+          plan?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          avatar_url?: string | null
           bio?: string | null
           created_at?: string
           currency?: string
           date_format?: string
+          financial_goals?: Json | null
           full_name?: string | null
           id?: string
+          income_range?: string | null
+          income_source?: string | null
+          last_name?: string | null
+          notification_preferences?: Json | null
+          phone?: string | null
+          plan?: string
           updated_at?: string
           user_id?: string
         }

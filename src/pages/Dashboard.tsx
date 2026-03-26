@@ -1,23 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, Brain, Database } from "lucide-react";
+import { TrendingUp, TrendingDown, Brain, Database, AlertTriangle, ChevronRight } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { mockTransactions, mockBudgets, monthlyData, spendingByCategory, categoryIcons } from "@/data/mockData";
+import { getCategoryColor } from "@/data/categoryColors";
 import { FAB } from "@/components/FAB";
 import { AddTransactionModal } from "@/components/AddTransactionModal";
 import { useIsDemo } from "@/contexts/DemoContext";
 import { useTransactions, useBudgets, useAddTransaction, useSeedData } from "@/hooks/useFinanceData";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
   visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.1, duration: 0.5 } }),
 };
 
+function useTimeAgo(date: Date | null) {
+  const [text, setText] = useState("just now");
+  useEffect(() => {
+    if (!date) return;
+    const update = () => {
+      const diff = Date.now() - date.getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) setText("just now");
+      else if (mins < 60) setText(`${mins}m ago`);
+      else { const hrs = Math.floor(mins / 60); if (hrs < 24) setText(`${hrs}h ago`); else { const days = Math.floor(hrs / 24); if (days < 30) setText(`${days} days ago`); else { const months = Math.floor(days / 30); if (months < 12) setText(`${months} months ago`); else setText(`${Math.floor(months / 12)} years ago`); } } }
+    };
+    update();
+    const interval = setInterval(update, 60000);
+    return () => clearInterval(interval);
+  }, [date]);
+  return text;
+}
+
 export default function Dashboard() {
   const [modalOpen, setModalOpen] = useState(false);
   const isDemo = useIsDemo();
-  
+
   const { data: realTransactions } = useTransactions();
   const { data: realBudgets } = useBudgets();
   const addTransaction = useAddTransaction();
@@ -26,26 +46,44 @@ export default function Dashboard() {
   const transactions = isDemo ? mockTransactions : (realTransactions || []);
   const budgets = isDemo ? mockBudgets : (realBudgets || []);
 
+  // Last updated timestamp
+  const lastTxDate = transactions.length > 0 ? new Date((transactions[0] as any).created_at || transactions[0].date) : null;
+  const timeAgoText = useTimeAgo(lastTxDate);
+
   const totalIncome = transactions.filter(t => t.type === "income").reduce((a, t) => a + Number(t.amount), 0);
   const totalExpenses = transactions.filter(t => t.type === "expense").reduce((a, t) => a + Number(t.amount), 0);
   const balance = totalIncome - totalExpenses;
   const savingsRate = totalIncome > 0 ? Math.round(((totalIncome - totalExpenses) / totalIncome) * 100) : 0;
   const recentTx = transactions.slice(0, 5);
 
-  // Build spending by category from real data
+  // Build spending by category with consistent colors
   const spendingByCat = isDemo ? spendingByCategory : (() => {
     const catMap: Record<string, number> = {};
     transactions.filter(t => t.type === "expense").forEach(t => {
       catMap[t.category] = (catMap[t.category] || 0) + Number(t.amount);
     });
-    const colors: Record<string, string> = {
-      "Food & Dining": "#4edea3", Transport: "#60a5fa", Housing: "#f59e0b",
-      Entertainment: "#a78bfa", Health: "#f87171", Shopping: "#fb923c",
-      Education: "#34d399", Utilities: "#fbbf24", Investment: "#2dd4bf", Other: "#94a3b8",
-    };
-    return Object.entries(catMap).map(([name, value]) => ({ name, value, color: colors[name] || "#94a3b8" }));
+    return Object.entries(catMap).map(([name, value]) => ({ name, value, color: getCategoryColor(name) }));
   })();
   const totalSpending = spendingByCat.reduce((a, c) => a + c.value, 0);
+
+  // Build net worth chart from real data
+  const netWorthData = isDemo ? monthlyData : (() => {
+    if (transactions.length < 2) return [];
+    const sorted = [...transactions].sort((a, b) => a.date.localeCompare(b.date));
+    const monthMap: Record<string, { income: number; expenses: number }> = {};
+    sorted.forEach(t => {
+      const m = t.date.slice(0, 7);
+      if (!monthMap[m]) monthMap[m] = { income: 0, expenses: 0 };
+      if (t.type === "income") monthMap[m].income += Number(t.amount);
+      else monthMap[m].expenses += Number(t.amount);
+    });
+    let cumulative = 0;
+    return Object.entries(monthMap).sort().map(([m, v]) => {
+      cumulative += v.income - v.expenses;
+      const monthName = new Date(m + "-01").toLocaleDateString("en", { month: "short" });
+      return { month: monthName, income: v.income, expenses: v.expenses, savings: cumulative };
+    });
+  })();
 
   // Budget data for progress bars
   const budgetItems = isDemo ? mockBudgets : budgets.map(b => {
@@ -53,10 +91,15 @@ export default function Dashboard() {
     return { ...b, spent, limit: Number(b.limit) };
   });
 
+  // Check if user has previous month data
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const prevMonth = (() => { const d = new Date(); d.setMonth(d.getMonth() - 1); return d.toISOString().slice(0, 7); })();
+  const hasPrevMonthData = isDemo || transactions.some(t => t.date.startsWith(prevMonth));
+
   const stats = [
-    { label: "Total Balance", value: `KES ${balance.toLocaleString()}`, trend: "+8.2%", up: true, color: "text-foreground" },
-    { label: "Monthly Income", value: `KES ${totalIncome.toLocaleString()}`, trend: "+12%", up: true, color: "text-primary" },
-    { label: "Monthly Expenses", value: `KES ${totalExpenses.toLocaleString()}`, trend: "-12%", up: false, color: "text-expense" },
+    { label: "Total Balance", value: `KES ${balance.toLocaleString()}`, trend: hasPrevMonthData ? "+8.2%" : null, up: true, color: "text-foreground" },
+    { label: "Monthly Income", value: `KES ${totalIncome.toLocaleString()}`, trend: hasPrevMonthData ? "+12%" : null, up: true, color: "text-primary" },
+    { label: "Monthly Expenses", value: `KES ${totalExpenses.toLocaleString()}`, trend: hasPrevMonthData ? "-12%" : null, up: false, color: "text-expense" },
   ];
 
   const handleAddTransaction = (tx: { description: string; amount: number; category: string; type: "income" | "expense"; date: string }) => {
@@ -102,10 +145,14 @@ export default function Dashboard() {
           <motion.div key={stat.label} className="glass-card" custom={i} initial="hidden" animate="visible" variants={fadeUp}>
             <p className="text-xs text-muted-foreground mb-1">{stat.label}</p>
             <p className={`stat-value ${stat.color}`}>{stat.value}</p>
-            <div className={`pill-badge mt-2 ${stat.up ? "bg-primary/10 text-primary" : "bg-expense/10 text-expense"}`}>
-              {stat.up ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-              {stat.trend} vs last month
-            </div>
+            {stat.trend ? (
+              <div className={`pill-badge mt-2 ${stat.up ? "bg-primary/10 text-primary" : "bg-expense/10 text-expense"}`}>
+                {stat.up ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                {stat.trend} vs last month
+              </div>
+            ) : (
+              <div className="pill-badge mt-2 bg-primary/10 text-primary">First month tracking 🎉</div>
+            )}
           </motion.div>
         ))}
         <motion.div className="glass-card border-l-4 border-l-primary" custom={3} initial="hidden" animate="visible" variants={fadeUp}>
@@ -121,23 +168,26 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <motion.div className="glass-card xl:col-span-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
           <h3 className="text-sm font-semibold text-foreground mb-4">Net Worth Overview</h3>
-          <ResponsiveContainer width="100%" height={240}>
-            <AreaChart data={monthlyData}>
-              <defs>
-                <linearGradient id="tealGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#4edea3" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#4edea3" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="month" tick={{ fill: '#c6c6cd', fontSize: 12 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: '#c6c6cd', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-              <Tooltip
-                contentStyle={{ background: 'rgba(23,31,51,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#dae2fd' }}
-                formatter={(value: number) => [`KES ${value.toLocaleString()}`, '']}
-              />
-              <Area type="monotone" dataKey="savings" stroke="#4edea3" strokeWidth={3} fill="url(#tealGrad)" />
-            </AreaChart>
-          </ResponsiveContainer>
+          {netWorthData.length >= 2 ? (
+            <ResponsiveContainer width="100%" height={240}>
+              <AreaChart data={netWorthData}>
+                <defs>
+                  <linearGradient id="tealGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#4edea3" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#4edea3" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="month" tick={{ fill: '#c6c6cd', fontSize: 12 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: '#c6c6cd', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+                <Tooltip contentStyle={{ background: 'rgba(23,31,51,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#dae2fd' }} formatter={(value: number) => [`KES ${value.toLocaleString()}`, '']} />
+                <Area type="monotone" dataKey="savings" stroke="#4edea3" strokeWidth={3} fill="url(#tealGrad)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-[240px] text-center">
+              <p className="text-sm text-muted-foreground max-w-xs">Your net worth chart will appear as you add transactions over time. Keep tracking!</p>
+            </div>
+          )}
         </motion.div>
 
         <motion.div className="glass-card" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
@@ -145,9 +195,7 @@ export default function Dashboard() {
           <ResponsiveContainer width="100%" height={180}>
             <PieChart>
               <Pie data={spendingByCat} innerRadius={50} outerRadius={75} dataKey="value" strokeWidth={0}>
-                {spendingByCat.map((entry) => (
-                  <Cell key={entry.name} fill={entry.color} />
-                ))}
+                {spendingByCat.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
               </Pie>
               <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="fill-foreground text-lg font-bold">
                 KES {totalSpending > 0 ? (totalSpending / 1000).toFixed(0) + "k" : "0"}
@@ -157,8 +205,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2">
             {spendingByCat.slice(0, 6).map(c => (
               <div key={c.name} className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="w-2 h-2 rounded-full" style={{ background: c.color }} />
-                {c.name}
+                <span className="w-2 h-2 rounded-full" style={{ background: c.color }} /> {c.name}
               </div>
             ))}
           </div>
@@ -189,21 +236,36 @@ export default function Dashboard() {
 
         <motion.div className="glass-card space-y-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}>
           <h3 className="text-sm font-semibold text-foreground">Budget Progress</h3>
-          {budgetItems.slice(0, 3).map(b => {
-            const pct = Math.round((b.spent / Number(b.limit)) * 100);
-            const barClass = pct >= 100 ? "progress-bar-fill-danger" : pct >= 75 ? "progress-bar-fill-warning" : "progress-bar-fill-primary";
-            return (
-              <div key={b.id}>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-muted-foreground">{b.category}</span>
-                  <span className={pct >= 100 ? "text-expense" : pct >= 75 ? "text-warning" : "text-primary"}>{pct}%</span>
-                </div>
-                <div className="progress-bar">
-                  <div className={barClass} style={{ width: `${Math.min(pct, 100)}%` }} />
-                </div>
+          {budgetItems.length === 0 ? (
+            <div className="rounded-lg border border-warning/30 bg-warning/5 p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="w-4 h-4 text-warning" />
+                <span className="text-xs font-semibold text-warning">No budgets set</span>
               </div>
-            );
-          })}
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Without budget limits, we cannot warn you before you overspend.
+              </p>
+              <Link to={isDemo ? "/demo/budgets" : "/budgets"} className="inline-flex items-center gap-1 text-xs font-semibold text-primary mt-2 hover:underline">
+                Set Budgets Now <ChevronRight className="w-3 h-3" />
+              </Link>
+            </div>
+          ) : (
+            budgetItems.slice(0, 3).map(b => {
+              const pct = Math.round((b.spent / Number(b.limit)) * 100);
+              const barClass = pct >= 100 ? "progress-bar-fill-danger" : pct >= 75 ? "progress-bar-fill-warning" : "progress-bar-fill-primary";
+              return (
+                <div key={b.id}>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-muted-foreground">{b.category}</span>
+                    <span className={pct >= 100 ? "text-expense" : pct >= 75 ? "text-warning" : "text-primary"}>{pct}%</span>
+                  </div>
+                  <div className="progress-bar">
+                    <div className={barClass} style={{ width: `${Math.min(pct, 100)}%` }} />
+                  </div>
+                </div>
+              );
+            })
+          )}
 
           <div className="border border-primary/20 rounded-lg p-3 mt-2">
             <div className="flex items-center gap-2 mb-2">
