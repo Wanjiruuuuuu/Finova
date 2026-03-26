@@ -29,10 +29,13 @@ export default function Transactions() {
     if (search) result = result.filter(t => t.description.toLowerCase().includes(search.toLowerCase()));
     if (catFilter !== "All") result = result.filter(t => t.category === catFilter);
     result.sort((a, b) => {
-      if (sortBy === "date-desc") return b.date.localeCompare(a.date);
-      if (sortBy === "date-asc") return a.date.localeCompare(b.date);
-      if (sortBy === "amount-desc") return Number(b.amount) - Number(a.amount);
-      return Number(a.amount) - Number(b.amount);
+      switch (sortBy) {
+        case "date-desc": return b.date.localeCompare(a.date);
+        case "date-asc": return a.date.localeCompare(b.date);
+        case "amount-desc": return Number(b.amount) - Number(a.amount);
+        case "amount-asc": return Number(a.amount) - Number(b.amount);
+        default: return 0;
+      }
     });
     return result;
   }, [transactions, search, catFilter, sortBy]);
@@ -99,41 +102,26 @@ export default function Transactions() {
           </thead>
           <tbody>
             {paginated.map((tx, i) => (
-              <motion.tr
-                key={tx.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: i * 0.03 }}
-                className="border-b border-border/50 hover:bg-secondary/30 transition-colors group"
-              >
+              <motion.tr key={tx.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }} className="border-b border-border/50 hover:bg-secondary/30 transition-colors group">
                 <td className="px-6 py-3">
                   <span className="text-foreground">{new Date(tx.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</span>
                   <span className="text-muted-foreground text-xs ml-1">{new Date(tx.date).getFullYear()}</span>
                 </td>
                 <td className="px-6 py-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center text-base">
-                      {categoryIcons[tx.category] || "📋"}
-                    </div>
+                    <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center text-base">{categoryIcons[tx.category] || "📋"}</div>
                     <span className="font-semibold text-foreground">{tx.description}</span>
                   </div>
                 </td>
-                <td className="px-6 py-3">
-                  <span className="pill-badge bg-secondary text-muted-foreground">{tx.category}</span>
-                </td>
+                <td className="px-6 py-3"><span className="pill-badge bg-secondary text-muted-foreground">{tx.category}</span></td>
                 <td className="px-6 py-3 text-right">
                   <span className={`font-bold ${tx.type === "income" ? "text-primary" : "text-expense"}`}>
                     {tx.type === "income" ? "+" : "-"}KES {Number(tx.amount).toLocaleString()}
                   </span>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    {tx.type === "income" ? "INCOME" : "EXPENSE"}
-                  </p>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{tx.type === "income" ? "INCOME" : "EXPENSE"}</p>
                 </td>
                 <td className="px-4 py-3">
-                  <button
-                    onClick={() => handleDelete(tx.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-muted-foreground hover:text-expense hover:bg-expense/10 transition-all"
-                  >
+                  <button onClick={() => handleDelete(tx.id)} className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-muted-foreground hover:text-expense hover:bg-expense/10 transition-all">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </td>
@@ -148,13 +136,7 @@ export default function Transactions() {
           <span>Showing {((page-1)*PER_PAGE)+1} to {Math.min(page*PER_PAGE, filtered.length)} of {filtered.length} entries</span>
           <div className="flex gap-1">
             {Array.from({ length: totalPages }, (_, i) => (
-              <button
-                key={i}
-                onClick={() => setPage(i + 1)}
-                className={`w-8 h-8 rounded-lg text-xs font-semibold transition-colors ${page === i + 1 ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary"}`}
-              >
-                {i + 1}
-              </button>
+              <button key={i} onClick={() => setPage(i + 1)} className={`w-8 h-8 rounded-lg text-xs font-semibold transition-colors ${page === i + 1 ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary"}`}>{i + 1}</button>
             ))}
           </div>
         </div>

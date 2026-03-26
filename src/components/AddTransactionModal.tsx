@@ -25,6 +25,10 @@ export function AddTransactionModal({ open, onClose, onAdd }: AddTransactionModa
     onClose();
   };
 
+  const blockInvalidChars = (e: React.KeyboardEvent) => {
+    if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') e.preventDefault();
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div className="glass-card w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
@@ -36,33 +40,27 @@ export function AddTransactionModal({ open, onClose, onAdd }: AddTransactionModa
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Type toggle */}
           <div className="flex rounded-lg overflow-hidden border border-border">
-            <button
-              type="button"
-              onClick={() => setType("expense")}
-              className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${type === "expense" ? "bg-expense/20 text-expense" : "text-muted-foreground"}`}
-            >
-              Expense
-            </button>
-            <button
-              type="button"
-              onClick={() => setType("income")}
-              className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${type === "income" ? "bg-primary/20 text-primary" : "text-muted-foreground"}`}
-            >
-              Income
-            </button>
+            <button type="button" onClick={() => setType("expense")} className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${type === "expense" ? "bg-expense/20 text-expense" : "text-muted-foreground"}`}>Expense</button>
+            <button type="button" onClick={() => setType("income")} className={`flex-1 py-2.5 text-sm font-semibold transition-colors ${type === "income" ? "bg-primary/20 text-primary" : "text-muted-foreground"}`}>Income</button>
           </div>
 
           <input className="input-dark" placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} required />
-          <input className="input-dark" placeholder="Amount (KES)" type="number" min="0" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} required />
-          
+          <input
+            className="input-dark"
+            placeholder="Amount (KES)"
+            type="number"
+            min="0.01"
+            step="0.01"
+            value={amount}
+            onChange={e => setAmount(e.target.value)}
+            onKeyDown={blockInvalidChars}
+            required
+          />
           <select className="input-dark" value={category} onChange={e => setCategory(e.target.value)}>
             {categories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
-
           <input className="input-dark" type="date" value={date} onChange={e => setDate(e.target.value)} />
-
           <button type="submit" className="btn-primary w-full">Add Transaction</button>
         </form>
       </div>
