@@ -11,7 +11,6 @@ export interface Advisor {
   rating: number;
   clientsHelped: number;
   avatarColor: string;
-  gender: string;
 }
 
 export const advisors: Advisor[] = [
